@@ -44,7 +44,7 @@
         shell: /bin/bash
         state: present
       become: yes
-      tags: createarya
+      tags: [user, createarya]
 
     - name: create user
       ansible.builtin.user:
@@ -52,7 +52,7 @@
         shell: /bin/bash
         state: present
       become: yes
-      tags: createsansa
+      tags: [user, createsansa]
 
     - name: create user
       ansible.builtin.user:
@@ -60,5 +60,5 @@
         shell: /bin/bash
         state: present
       become: yes
-      tags: createtirion
+      tags: [user, createtirion]
 
