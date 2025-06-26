@@ -1,0 +1,92 @@
+- hosts: allserv
+  tasks:
+    - name: install chrony
+      ansible.builtin.apt:
+        name: chrony
+        state: present
+        update_cache: yes
+      become: yes
+
+    - name: enable and start chrony
+      ansible.builtin.shell: systemctl enable chrony && systemctl start chrony
+      become: yes
+
+    - name: status chrony
+      ansible.builtin.shell: systemctl status chrony
+      become: yes
+
+    - name: timezone
+      ansible.builtin.shell: timedatectl set-timezone Europe/Moscow
+      become: yes
+
+    - name: check timezone
+      ansible.builtin.shell: timedatectl
+      become: yes
+
+    - name: firewall
+      ansible.builtin.shell: iptables -I INPUT -p tcp --dport 445 -j ACCEPT &&
+        iptables -I INPUT -p udp --dport 137:138 -j ACCEPT &&
+        iptables -I INPUT -p tcp --dport 139 -j ACCEPT
+      become: yes
+
+    - name: install iptables-persistent
+      ansible.builtin.apt:
+        name: iptables-persistent
+        state: present
+      become: yes
+
+    - name: firewall save settings
+      ansible.builtin.shell: netfilter-persistent save
+      become: yes
+
+    - name: install samba
+      ansible.builtin.apt:
+        name: samba
+        state: present
+        update_cache: yes
+      become: yes
+
+    - name: status samba
+      command: systemctl status smbd
+      register: result
+      become: yes
+      ignore_errors: yes
+
+    - name: show status samba
+      debug:
+        var: result
+
+    - name: update config samba
+      ansible.builtin.blockinfile:
+        path: /etc/samba/smb.conf
+        block: |
+          [Afanasiy]
+            comment = Public Folder
+            path = /usr/public
+            public = yes
+            writable = yes
+            read only = no
+            guest ok = yes
+            create mask = 0777
+            directory mask = 0777
+            force create mode = 0777
+            force directory mode = 0777
+      notify:
+        - rest smbd
+      become: yes
+
+
+    - name: add directory
+      ansible.builtin.shell: mkdir -p /usr/public
+      become: yes
+
+    - name: security directory
+      ansible.builtin.shell: chmod 777 /usr/public
+      become: yes
+
+  handlers:
+    - name: rest smbd
+      ansible.builtin.service:
+        name: smbd
+        state: reloaded
+      become: yes
